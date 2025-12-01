@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="col-md-6 col-lg-5">
+        
+        <div class="card shadow-lg border-0 rounded-4">
+            <div class="card-header bg-primary text-white text-center py-4 rounded-top-4">
+                <h3 class="mb-0 fw-bold"><i class="bi bi-shop-window"></i> Registrar Negocio</h3>
+                <p class="small mb-0 opacity-75">Crea tu cuenta administrativa</p>
+            </div>
+            
+            <div class="card-body p-4 p-md-5">
+                <form method="post" novalidate id="registerForm">
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger alert-dismissible fade show">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            {% for error in form.non_field_errors %} {{ error }} {% endfor %}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endif %}
+
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-secondary small">{{ field.label }}</label>
+                        <div class="input-group">
+                            {{ field }}
+                            <div class="invalid-feedback">
+                                {% if field.errors %}
+                                    {% for error in field.errors %} {{ error }} {% endfor %}
+                                {% else %}
+                                    <span class="js-error"></span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg fw-bold shadow-sm" id="submitBtn">
+                            <i class="bi bi-check-circle-fill me-2"></i> Crear Cuenta
+                        </button>
+                        <a href="{% url 'login' %}" class="btn btn-outline-secondary btn-lg">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-center bg-light py-3 rounded-bottom-4">
+                <small class="text-muted">¿Ya tienes cuenta? <a href="{% url 'login' %}" class="text-decoration-none fw-bold">Inicia Sesión</a></small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- LÓGICA DE VALIDACIÓN RUT CHILENO (ROBUSTA) ---
+    const Fn = {
+        // Valida el rut aceptando puntos y guión
+        validaRut : function (rutCompleto) {
+            // 1. Limpiamos cualquier punto para dejar formato 12345678-9
+            rutCompleto = rutCompleto.replace(/\./g, '');
+            
+            // 2. Validamos formato básico (números + guión + n°/k)
+            if (!/^[0-9]+[-|‐]{1}[0-9kK]{1}$/.test( rutCompleto )) return false;
+            
+            // 3. Separamos cuerpo y dígito
+            var tmp     = rutCompleto.split('-');
+            var digv    = tmp[1]; 
+            var rut     = tmp[0];
+            
+            if ( digv == 'K' ) digv = 'k' ;
+            
+            // 4. Comparamos
+            return (Fn.dv(rut) == digv );
+        },
+        dv : function(T){
+            var M=0,S=1;
+            for(;T;T=Math.floor(T/10))
+                S=(S+T%10*(9-M++%6))%11;
+            return S?S-1:'k';
+        },
+        formatear : function(rut){
+            let valor = rut.replace(/\./g,'').replace(/-/g,'');
+            if(valor.length <= 1) return valor;
+            
+            let cuerpo = valor.slice(0,-1);
+            let dv = valor.slice(-1).toUpperCase();
+            
+            rut = cuerpo + '-'+ dv;
+            if(cuerpo.length > 3) rut = cuerpo.slice(0, -3) + '.' + cuerpo.slice(-3) + '-' + dv;
+            if(cuerpo.length > 6) rut = cuerpo.slice(0, -6) + '.' + cuerpo.slice(-6, -3) + '.' + cuerpo.slice(-3) + '-' + dv;
+            return rut;
+        },
+        limpiar : function(rut) {
+            return rut.replace(/\./g, '').replace(/-/g, '').trim().toUpperCase();
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const form = document.getElementById('registerForm');
+        const inputs = form.querySelectorAll('input, select, textarea');
+
+        inputs.forEach(input => {
+            input.classList.add('form-control');
+            
+            const label = input.closest('.mb-3')?.querySelector('label')?.innerText.toLowerCase() || '';
+            
+            // Detectar si es campo RUT
+            if(input.name.includes('rut') || label.includes('rut')) {
+                
+                // Formateo mientras escribe
+                input.addEventListener('input', function() {
+                    let limpio = this.value.replace(/[^0-9kK]/g, '');
+                    if (limpio.length > 1) {
+                        this.value = Fn.formatear(limpio);
+                    }
+                });
+
+                // Validación al perder el foco (blur)
+                input.addEventListener('blur', function() {
+                    const rutLimpio = Fn.limpiar(this.value);
+                    
+                    if (rutLimpio.length > 1) {
+                        // Pasamos el valor tal cual (con puntos) a validaRut, 
+                        // porque ahora validaRut sabe limpiarlos.
+                        if (!Fn.validaRut(this.value)) {
+                            this.classList.add('is-invalid');
+                            this.classList.remove('is-valid');
+                            
+                            let errorDiv = this.nextElementSibling;
+                            if (errorDiv && errorDiv.classList.contains('invalid-feedback')) {
+                                let span = errorDiv.querySelector('.js-error');
+                                if (!span) {
+                                    span = document.createElement('span');
+                                    span.className = 'js-error';
+                                    errorDiv.appendChild(span);
+                                }
+                                span.innerText = "RUT inválido (Revise dígito verificador).";
+                            }
+                        } else {
+                            this.classList.remove('is-invalid');
+                            this.classList.add('is-valid');
+                        }
+                    } else {
+                        this.classList.remove('is-invalid');
+                        this.classList.remove('is-valid');
+                    }
+                });
+            }
+        });
+
+        // Validación final al enviar
+        form.addEventListener('submit', function(event) {
+            let valid = true;
+            inputs.forEach(input => {
+                const label = input.closest('.mb-3')?.querySelector('label')?.innerText.toLowerCase() || '';
+                
+                if((input.name.includes('rut') || label.includes('rut')) && input.value) {
+                    if (!Fn.validaRut(input.value)) {
+                        input.classList.add('is-invalid');
+                        valid = false;
+                        
+                        let errorDiv = input.nextElementSibling;
+                        if(errorDiv) {
+                             let span = errorDiv.querySelector('.js-error');
+                             if(span) span.innerText = "RUT inválido.";
+                        }
+                    }
+                }
+                
+                if(input.hasAttribute('required') && !input.value) {
+                    input.classList.add('is-invalid');
+                    valid = false;
+                }
+            });
+
+            if (!valid) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        });
+    });
+</script>
+{% endblock %}

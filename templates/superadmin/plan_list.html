@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-tags"></i> Configuración de Planes</h2>
+    <a href="{% url 'super_plan_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Crear Nuevo Plan</a>
+</div>
+
+<div class="row">
+    {% for plan in plans %}
+    <div class="col-md-4">
+        <div class="card mb-4 shadow-sm h-100">
+            <div class="card-header bg-light text-center py-3">
+                <h4 class="my-0 fw-normal">{{ plan.name }}</h4>
+            </div>
+            <div class="card-body">
+                <h1 class="card-title pricing-card-title text-center">
+                    ${{ plan.price }}<small class="text-muted fw-light">/mes</small>
+                </h1>
+                <ul class="list-group list-group-flush mt-3 mb-4">
+                    <li class="list-group-item">Max Sucursales: <strong>{{ plan.max_branches }}</strong></li>
+                    <li class="list-group-item">Max Usuarios: <strong>{{ plan.max_users }}</strong></li>
+                </ul>
+                <div class="d-grid">
+                    <a href="{% url 'super_plan_edit' plan.id %}" class="btn btn-outline-primary">Editar Configuración</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

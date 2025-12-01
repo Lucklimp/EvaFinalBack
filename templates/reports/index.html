@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="bi bi-bar-chart-line-fill"></i> Reportes Gerenciales</h2>
+        <span class="badge bg-primary">Plan: {{ plan_name }}</span>
+    </div>
+    <div class="text-end text-muted">
+        <small>Fecha: {% now "d/m/Y" %}</small>
+    </div>
+</div>
+
+<!-- 1. KPIs GENERALES -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card border-primary h-100 shadow-sm">
+            <div class="card-body">
+                <h6 class="text-primary small text-uppercase fw-bold">Ventas Hoy</h6>
+                <h3 class="mb-0 fw-bold">${{ sales_today|default:"0" }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-success h-100 shadow-sm">
+            <div class="card-body">
+                <h6 class="text-success small text-uppercase fw-bold">Ventas Mes</h6>
+                <h3 class="mb-0 fw-bold">${{ sales_month|default:"0" }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-info h-100 shadow-sm">
+            <div class="card-body">
+                <h6 class="text-info small text-uppercase fw-bold">Valor Inventario</h6>
+                <h3 class="mb-0 fw-bold">${{ inventory_value|default:"0" }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-warning h-100 shadow-sm">
+            <div class="card-body">
+                <h6 class="text-warning small text-uppercase fw-bold">Stock Total</h6>
+                <h3 class="mb-0 fw-bold">{{ total_stock }} Unid.</h3>
+                {% if low_stock_count > 0 %}
+                <small class="text-danger fw-bold"><i class="bi bi-exclamation-circle"></i> {{ low_stock_count }} Críticos</small>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 2. REPORTE POR SUCURSAL (Solo Premium/Estándar) -->
+{% if can_see_details %}
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white py-3">
+        <h5 class="mb-0"><i class="bi bi-shop"></i> Rendimiento por Sucursal (Día/Mes)</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-4">Sucursal</th>
+                    <th>Stock Físico</th>
+                    <th>Venta Hoy</th>
+                    <th>Venta Mes</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in stock_by_branch %}
+                <tr>
+                    <td class="ps-4 fw-bold">{{ b.name }}</td>
+                    <td>{{ b.stock }}</td>
+                    <td class="text-success">${{ b.sales_today }}</td>
+                    <td class="text-primary fw-bold">${{ b.sales_month }}</td>
+                    <td>
+                        {% if b.sales_month > 0 %}<span class="badge bg-success">Activa</span>
+                        {% else %}<span class="badge bg-secondary">Sin Movimiento</span>{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center py-4 text-muted">No hay sucursales registradas.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-warning shadow-sm mb-4">
+    <h4><i class="bi bi-lock-fill"></i> Detalle por Sucursal Bloqueado</h4>
+    <p>Actualiza a plan Estándar o Premium para ver el desglose de ventas por tienda.</p>
+    <a href="{% url 'subscription' %}" class="btn btn-warning btn-sm">Mejorar Plan</a>
+</div>
+{% endif %}
+
+<!-- 3. REPORTE DE PROVEEDORES -->
+<div class="card shadow-sm">
+    <div class="card-header bg-white py-3">
+        <h5 class="mb-0"><i class="bi bi-truck"></i> Relación con Proveedores</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-striped mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-4">Proveedor</th>
+                    <th>Contacto</th>
+                    <th>RUT</th>
+                    <th>Compras Totales</th>
+                    <th>Última Compra</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in suppliers_report %}
+                <tr>
+                    <td class="ps-4 fw-bold">{{ s.name }}</td>
+                    <td>{{ s.contact }}</td>
+                    <td>{{ s.rut }}</td>
+                    <td><span class="badge bg-info">{{ s.purchases_count }} Órdenes</span></td>
+                    <td>{{ s.last_purchase|date:"d/m/Y"|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center py-4 text-muted">No hay proveedores registrados.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

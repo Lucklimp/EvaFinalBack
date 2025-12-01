@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">{{ title }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.sku.label_tag }}
+                                {{ form.sku }}
+                            </div>
+                        </div>
+                        <!-- SOLO MOSTRAMOS STOCK SI ES NUEVO -->
+                        {% if not form.instance.pk %}
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.initial_stock.label_tag }}
+                                {{ form.initial_stock }}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.name.label_tag }}
+                        {{ form.name }}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.description.label_tag }}
+                        {{ form.description }}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.cost.label_tag }}
+                                {{ form.cost }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.price.label_tag }}
+                                {{ form.price }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-success">Guardar Producto</button>
+                        <a href="{% url 'product_list' %}" class="btn btn-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

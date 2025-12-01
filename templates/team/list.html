@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row align-items-center mb-3">
+    <div class="col-md-6">
+        <h2>Mi Equipo</h2>
+    </div>
+    <div class="col-md-6 text-end">
+        <!-- BARRA DE PROGRESO DE USO -->
+        {% if usage.is_unlimited %}
+            <span class="badge bg-success">Usuarios Ilimitados</span>
+        {% else %}
+            <div class="d-flex align-items-center justify-content-end gap-2">
+                <small class="text-muted">Uso del Plan: {{ usage.current }} / {{ usage.limit }}</small>
+                <div class="progress" style="width: 150px; height: 10px;">
+                    <div class="progress-bar {% if usage.percent > 90 %}bg-danger{% else %}bg-primary{% endif %}" 
+                         role="progressbar" style="width: {{ usage.percent }}%"></div>
+                </div>
+            </div>
+        {% endif %}
+        
+        <a href="{% url 'team_create' %}" class="btn btn-primary ms-3 
+           {% if not usage.is_unlimited and usage.current >= usage.limit %}disabled{% endif %}">
+            <i class="bi bi-person-plus"></i> Nuevo Usuario
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <table class="table table-hover mb-0 align-middle">
+        <thead class="table-light">
+            <tr><th>Nombre</th><th>Email</th><th>Rol</th><th class="text-end">Acciones</th></tr>
+        </thead>
+        <tbody>
+            {% for member in members %}
+            <tr>
+                <td>{{ member.first_name }} {{ member.last_name }}</td>
+                <td>{{ member.email }}</td>
+                <td><span class="badge bg-info">{{ member.get_role_display }}</span></td>
+                <td class="text-end">
+                    <a href="{% url 'team_edit' member.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                    <a href="{% url 'team_delete' member.id %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center p-4">No hay equipo registrado.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

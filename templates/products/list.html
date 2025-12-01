@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row align-items-center mb-3">
+    <div class="col-md-6">
+        <h2><i class="bi bi-box-seam"></i> Inventario de Productos</h2>
+    </div>
+    <div class="col-md-6 text-end">
+        {% if usage.is_unlimited %}
+            <span class="badge bg-success">Stock Ilimitado</span>
+        {% else %}
+            <div class="d-flex align-items-center justify-content-end gap-2">
+                <small class="text-muted">Items: {{ usage.current }} / {{ usage.limit }}</small>
+                <div class="progress" style="width: 150px; height: 10px;">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ usage.percent }}%"></div>
+                </div>
+            </div>
+        {% endif %}
+        <a href="{% url 'product_create' %}" class="btn btn-success ms-3 shadow-sm {% if not usage.is_unlimited and usage.current >= usage.limit %}disabled{% endif %}">
+            <i class="bi bi-plus-lg"></i> Nuevo Producto
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-4">Producto</th>
+                    <th>Precio Venta</th>
+                    <th>Costo</th>
+                    <th>Stock Actual</th>
+                    <th class="text-end pe-4">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in products %}
+                <tr>
+                    <td class="ps-4">
+                        <div class="fw-bold">{{ p.name }}</div>
+                        <small class="text-muted badge bg-light text-dark border">{{ p.sku }}</small>
+                    </td>
+                    <td class="fw-bold text-success">${{ p.price }}</td>
+                    <td class="text-muted">${{ p.cost }}</td>
+                    <td>
+                        {% with stock=p.inventory_set.first.stock|default:0 %}
+                            {% if stock <= p.inventory_set.first.min_stock|default:5 %}
+                                <span class="badge bg-danger">{{ stock }} (Crítico)</span>
+                            {% else %}
+                                <span class="badge bg-success">{{ stock }}</span>
+                            {% endif %}
+                        {% endwith %}
+                    </td>
+                    <td class="text-end pe-4">
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-sm btn-outline-warning" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#stockModal{{ p.id }}" 
+                                    title="Ajustar Stock">
+                                <i class="bi bi-boxes"></i> Stock
+                            </button>
+                            <a href="{% url 'product_edit' p.id %}" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil"></i></a>
+                            <a href="{% url 'product_delete' p.id %}" class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center p-5 text-muted">No hay productos registrados.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% for p in products %}
+<div class="modal fade" id="stockModal{{ p.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning-subtle">
+                <h5 class="modal-title fs-6">Ajustar Stock: {{ p.name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{% url 'product_adjust_stock' p.id %}" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small text-muted">Tipo de Movimiento</label>
+                        <select name="operation" class="form-select form-select-sm">
+                            <option value="add" selected>➕ Agregar (Entrada)</option>
+                            <option value="subtract">➖ Restar (Salida/Pérdida)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small text-muted">Cantidad</label>
+                        <input type="number" name="quantity" class="form-control" min="1" value="1" required>
+                    </div>
+                </div>
+                <div class="modal-footer p-1">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-sm btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

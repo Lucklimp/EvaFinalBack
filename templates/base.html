@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TemucoSoft POS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
+        .navbar { background: linear-gradient(90deg, #0d6efd 0%, #004085 100%); }
+        .card { border: none; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: transform 0.2s; }
+        .card:hover { transform: translateY(-5px); }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4 px-3 shadow">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="{% url 'dashboard' %}"><i class="bi bi-box-seam"></i> TemucoSoft</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                {% if user.is_authenticated %}
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="{% url 'dashboard' %}">Inicio</a></li>
+
+                    <!-- MENU SUPER ADMIN -->
+                    {% if user.role == 'super_admin' %}
+                        <li class="nav-item"><a class="nav-link" href="{% url 'super_companies' %}">Empresas</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'super_user_list' %}">Usuarios</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'super_plans' %}">Planes</a></li>
+                    {% endif %}
+
+                    <!-- MENU ADMIN CLIENTE -->
+                    {% if user.role == 'admin_cliente' %}
+                        <li class="nav-item"><a class="nav-link" href="{% url 'team_list' %}">Equipo</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'branch_list' %}">Sucursales</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'subscription' %}">Mi Plan</a></li>
+                    {% endif %}
+
+                    <!-- MENU OPERATIVO -->
+                    {% if user.role == 'admin_cliente' or user.role == 'gerente' %}
+                        <li class="nav-item"><a class="nav-link" href="{% url 'product_list' %}">Inventario</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'supplier_list' %}">Proveedores</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'reports' %}">Reportes</a></li>
+                    {% endif %}
+                    
+                    {% if user.role != 'super_admin' %}
+                        <li class="nav-item ms-lg-3"><a class="btn btn-warning text-dark fw-bold btn-sm mt-1" href="{% url 'pos' %}">CAJA POS</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'sale_list' %}">Historial</a></li>
+                    {% endif %}
+                </ul>
+                <div class="d-flex align-items-center text-white">
+                    <div class="me-3 text-end lh-1">
+                        <small class="d-block opacity-75">Hola,</small>
+                        <span class="fw-bold">{{ user.first_name }}</span>
+                    </div>
+                    <form action="{% url 'logout' %}" method="post">
+                        {% csrf_token %}<button type="submit" class="btn btn-outline-light btn-sm">Salir</button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <div class="container pb-5">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+        {% block content %}{% endblock %}
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

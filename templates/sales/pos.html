@@ -1,0 +1,274 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row h-100">
+    <!-- COLUMNA IZQUIERDA: PRODUCTOS DISPONIBLES -->
+    <div class="col-md-8">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-header bg-white py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0 text-primary"><i class="bi bi-grid-3x3-gap-fill"></i> Catálogo</h4>
+                    <div class="input-group w-50">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" id="search" class="form-control border-start-0 bg-light" placeholder="Buscar por nombre o SKU..." onkeyup="filterProducts()">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-body bg-light overflow-auto" style="max-height: 75vh;">
+                <div class="row g-3" id="product-grid">
+                    {% for product in products %}
+                    <div class="col-md-4 col-lg-3 product-card" data-name="{{ product.name|lower }} {{ product.sku|lower }}">
+                        <div class="card h-100 shadow-sm border-0 product-item position-relative overflow-hidden" 
+                             onclick="addToCart({{ product.id }}, '{{ product.name }}', {{ product.price }})" 
+                             style="cursor: pointer; transition: all 0.2s;">
+                            
+                            <div class="card-body text-center p-3 d-flex flex-column justify-content-between">
+                                <div>
+                                    <div class="mb-2 text-secondary opacity-50 display-6"><i class="bi bi-box-seam"></i></div>
+                                    <h6 class="card-title text-truncate fw-bold mb-1" title="{{ product.name }}">{{ product.name }}</h6>
+                                    <span class="badge bg-light text-dark border mb-2">{{ product.sku }}</span>
+                                </div>
+                                <h5 class="text-primary fw-bold mb-0">${{ product.price }}</h5>
+                            </div>
+                            
+                            <!-- Overlay de "Agregar" al pasar el mouse -->
+                            <div class="product-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-primary bg-opacity-75 text-white opacity-0 transition-opacity">
+                                <span class="fw-bold fs-5"><i class="bi bi-plus-circle-fill"></i> Agregar</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12 text-center py-5">
+                        <i class="bi bi-inbox text-muted display-1"></i>
+                        <p class="mt-3 text-muted">No hay productos disponibles para venta.</p>
+                        <a href="{% url 'product_create' %}" class="btn btn-primary">Ir a Inventario</a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- COLUMNA DERECHA: TICKET DE VENTA (CARRITO) -->
+    <div class="col-md-4">
+        <div class="card shadow h-100 border-0 d-flex flex-column">
+            <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-cart4"></i> Ticket de Venta</h5>
+                <span id="item-count" class="badge bg-danger rounded-pill">0 items</span>
+            </div>
+            
+            <!-- LISTA DE ITEMS (SCROLLABLE) -->
+            <div class="card-body p-0 flex-grow-1 overflow-auto bg-light" style="max-height: 50vh;">
+                <ul id="cart-list" class="list-group list-group-flush">
+                    <li class="list-group-item text-center text-muted py-5" id="empty-msg">
+                        <i class="bi bi-cart-x display-4 opacity-25"></i>
+                        <p class="mt-2">El carrito está vacío.<br>Selecciona productos para comenzar.</p>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- TOTALES Y ACCIONES (FIJO ABAJO) -->
+            <div class="card-footer bg-white border-top p-3">
+                <div class="d-flex justify-content-between align-items-end mb-3">
+                    <div>
+                        <small class="text-muted d-block">Total a Pagar</small>
+                        <h2 class="mb-0 fw-bold text-success">$<span id="total-amount">0</span></h2>
+                    </div>
+                    <button class="btn btn-outline-danger btn-sm" onclick="clearCart()" title="Vaciar Carrito">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+                
+                <div class="d-grid">
+                    <button id="btn-pay" class="btn btn-success btn-lg fw-bold shadow-sm py-3" onclick="processSale()" disabled>
+                        <i class="bi bi-cash-coin me-2"></i> CONFIRMAR VENTA
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- LÓGICA JAVASCRIPT DEL POS -->
+<script>
+    // Estado del carrito: { producto_id: {name, price, qty} }
+    let cart = {}; 
+
+    // 1. Agregar Producto (Suma cantidad si ya existe, crea nuevo si no)
+    function addToCart(id, name, price) {
+        document.getElementById('empty-msg').style.display = 'none';
+        
+        if (cart[id]) {
+            cart[id].qty++; // Si ya tengo jabón, sumo 1 jabón
+        } else {
+            cart[id] = { name: name, price: price, qty: 1 }; // Si no, agrego el jabón
+        }
+        renderCart();
+    }
+
+    // 2. Renderizar la lista visual del carrito
+    function renderCart() {
+        const list = document.getElementById('cart-list');
+        // Guardamos el mensaje vacío para no borrarlo y recrearlo siempre
+        const emptyMsg = document.getElementById('empty-msg');
+        
+        // Limpiamos la lista visual pero mantenemos el mensaje oculto
+        list.innerHTML = '';
+        list.appendChild(emptyMsg);
+
+        let total = 0;
+        let count = 0;
+        let hasItems = false;
+
+        // Recorremos el objeto cart para dibujar cada item
+        for (const [id, item] of Object.entries(cart)) {
+            hasItems = true;
+            const subtotal = item.price * item.qty;
+            total += subtotal;
+            count += item.qty;
+
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center animate__animated animate__fadeIn';
+            li.innerHTML = `
+                <div class="flex-grow-1 me-2">
+                    <div class="fw-bold text-dark text-truncate" style="max-width: 150px;">${item.name}</div>
+                    <div class="small text-muted">$${item.price} c/u</div>
+                </div>
+                <div class="d-flex align-items-center">
+                    <div class="btn-group btn-group-sm me-3" role="group">
+                        <button class="btn btn-outline-secondary px-2" onclick="updateQty(${id}, -1)"><strong>-</strong></button>
+                        <span class="btn btn-outline-secondary disabled border-secondary text-dark fw-bold px-3" style="width: 40px; background: #fff;">${item.qty}</span>
+                        <button class="btn btn-outline-secondary px-2" onclick="updateQty(${id}, 1)"><strong>+</strong></button>
+                    </div>
+                    <div class="text-end" style="min-width: 60px;">
+                        <div class="fw-bold text-success">$${subtotal}</div>
+                        <small class="text-danger" style="cursor:pointer; font-size:0.75rem;" onclick="removeItem(${id})">Quitar</small>
+                    </div>
+                </div>
+            `;
+            list.appendChild(li);
+        }
+
+        // Mostrar/Ocultar mensaje vacío y habilitar botón
+        if (!hasItems) {
+            emptyMsg.style.display = 'block';
+            document.getElementById('btn-pay').disabled = true;
+        } else {
+            emptyMsg.style.display = 'none';
+            document.getElementById('btn-pay').disabled = false;
+        }
+
+        // Actualizar Totales
+        document.getElementById('total-amount').innerText = total.toLocaleString();
+        document.getElementById('item-count').innerText = count + (count === 1 ? ' item' : ' items');
+        
+        // Auto-scroll al final
+        const container = list.parentElement;
+        container.scrollTop = container.scrollHeight;
+    }
+
+    // 3. Modificar Cantidad (+/-)
+    function updateQty(id, change) {
+        if (cart[id]) {
+            cart[id].qty += change;
+            if (cart[id].qty <= 0) {
+                // Si baja a 0, preguntamos si borrar
+                if(confirm('¿Quitar este producto del ticket?')) {
+                    delete cart[id];
+                } else {
+                    cart[id].qty = 1; // Si cancela, vuelve a 1
+                }
+            }
+            renderCart();
+        }
+    }
+
+    // 4. Eliminar Item completo
+    function removeItem(id) {
+        delete cart[id];
+        renderCart();
+    }
+
+    // 5. Vaciar Todo
+    function clearCart() {
+        if(Object.keys(cart).length > 0 && confirm('¿Borrar todo el ticket actual?')) {
+            cart = {};
+            renderCart();
+        }
+    }
+
+    // 6. Filtrar Productos (Buscador)
+    function filterProducts() {
+        const term = document.getElementById('search').value.toLowerCase();
+        document.querySelectorAll('.product-card').forEach(card => {
+            const name = card.getAttribute('data-name');
+            card.style.display = name.includes(term) ? 'block' : 'none';
+        });
+    }
+
+    // 7. Enviar Venta
+    function processSale() {
+        const btn = document.getElementById('btn-pay');
+        const originalText = btn.innerHTML;
+        
+        if (Object.keys(cart).length === 0) return;
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Procesando...';
+
+        const items = Object.entries(cart).map(([id, item]) => ({ id: id, qty: item.qty }));
+
+        fetch('{% url "pos_submit" %}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify({ items: items })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Feedback visual de éxito
+                btn.className = "btn btn-success btn-lg fw-bold w-100 py-3";
+                btn.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i> ¡VENTA EXITOSA!';
+                setTimeout(() => {
+                    cart = {};
+                    window.location.href = "{% url 'sale_list' %}";
+                }, 1000);
+            } else {
+                alert('❌ Error: ' + (data.error || 'Error desconocido'));
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ Error de conexión.');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        });
+    }
+</script>
+
+<style>
+    /* Estilos Adicionales */
+    .product-item:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+        border-color: #0d6efd !important;
+    }
+    .product-item:hover .product-overlay {
+        opacity: 1 !important;
+    }
+    .transition-opacity {
+        transition: opacity 0.2s ease-in-out;
+    }
+    /* Scrollbar fino para la lista */
+    .overflow-auto::-webkit-scrollbar {
+        width: 6px;
+    }
+    .overflow-auto::-webkit-scrollbar-thumb {
+        background-color: rgba(0,0,0,0.2);
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white">
+                <h4 class="mb-0">{{ title }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="alert alert-info small mb-3">
+                        <i class="bi bi-info-circle"></i> 
+                        <strong>Nota para SuperAdmin:</strong> Puedes asignar cualquier Rol y Empresa.
+                        Si el rol es "Super Admin", deja el campo Empresa vacío.
+                    </div>
+
+                    {{ form.as_p }}
+                    
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-success">Guardar Usuario</button>
+                        <a href="{% url 'super_user_list' %}" class="btn btn-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

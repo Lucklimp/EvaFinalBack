@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+        <h2 class="fw-bold text-dark">
+            {% if user.role == 'super_admin' %}
+                <i class="bi bi-shield-lock-fill text-danger"></i> Panel Maestro
+            {% else %}
+                <i class="bi bi-building"></i> {{ user.company.name|default:"Mi Empresa" }}
+            {% endif %}
+        </h2>
+        <p class="text-muted">
+            {% if user.role == 'super_admin' %}
+                Gestión Global de TemucoSoft S.A.
+            {% else %}
+                Panel de Control General
+            {% endif %}
+        </p>
+    </div>
+    {% if user.role != 'super_admin' %}
+    <div class="col-md-4 text-end">
+        <span class="badge bg-primary p-2">Plan: {{ user.company.subscription.plan.name|default:"Sin Plan" }}</span>
+    </div>
+    {% endif %}
+</div>
+
+<div class="row g-4">
+    
+    {% if user.role == 'super_admin' %}
+    <div class="col-md-4">
+        <div class="card h-100 text-center p-4 border-danger shadow-sm">
+            <div class="card-body">
+                <div class="display-5 text-danger mb-3"><i class="bi bi-buildings-fill"></i></div>
+                <h4 class="card-title">Empresas</h4>
+                <a href="{% url 'super_companies' %}" class="btn btn-outline-danger w-100 stretched-link">Gestionar</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 text-center p-4 border-danger shadow-sm">
+            <div class="card-body">
+                <div class="display-5 text-danger mb-3"><i class="bi bi-people-fill"></i></div>
+                <h4 class="card-title">Usuarios</h4>
+                <a href="{% url 'super_user_list' %}" class="btn btn-outline-danger w-100 stretched-link">Ver Global</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 text-center p-4 border-danger shadow-sm">
+            <div class="card-body">
+                <div class="display-5 text-danger mb-3"><i class="bi bi-tags-fill"></i></div>
+                <h4 class="card-title">Planes</h4>
+                <a href="{% url 'super_plans' %}" class="btn btn-outline-danger w-100 stretched-link">Configurar</a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if user.role == 'admin_cliente' %}
+    <div class="col-md-4 col-lg-3">
+        <div class="card h-100 text-center p-3">
+            <div class="card-body">
+                <div class="display-5 text-primary mb-3"><i class="bi bi-people-fill"></i></div>
+                <h5 class="card-title">Mi Equipo</h5>
+                <a href="{% url 'team_list' %}" class="btn btn-outline-primary w-100 stretched-link">Administrar</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 col-lg-3">
+        <div class="card h-100 text-center p-3">
+            <div class="card-body">
+                <div class="display-5 text-primary mb-3"><i class="bi bi-shop"></i></div>
+                <h5 class="card-title">Sucursales</h5>
+                <a href="{% url 'branch_list' %}" class="btn btn-outline-primary w-100 stretched-link">Ver Locales</a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if user.role == 'admin_cliente' or user.role == 'gerente' %}
+    <div class="col-md-4 col-lg-3">
+        <div class="card h-100 text-center p-3 border-warning">
+            <div class="card-body">
+                <div class="display-5 text-warning mb-3"><i class="bi bi-box-seam-fill"></i></div>
+                <h5 class="card-title">Inventario</h5>
+                <a href="{% url 'product_list' %}" class="btn btn-outline-warning w-100 stretched-link">Ver Productos</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 col-lg-3">
+        <div class="card h-100 text-center p-3 border-warning">
+            <div class="card-body">
+                <div class="display-5 text-warning mb-3"><i class="bi bi-truck"></i></div>
+                <h5 class="card-title">Proveedores</h5>
+                <a href="{% url 'supplier_list' %}" class="btn btn-outline-warning w-100 stretched-link">Gestionar</a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if user.role != 'super_admin' %}
+    <div class="col-md-4 col-lg-3">
+        <div class="card h-100 text-center p-3 bg-success text-white">
+            <div class="card-body">
+                <div class="display-5 mb-3"><i class="bi bi-cart-check-fill"></i></div>
+                <h5 class="card-title">Punto de Venta</h5>
+                <a href="{% url 'pos' %}" class="btn btn-light text-success fw-bold w-100 stretched-link">ABRIR CAJA</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 col-lg-3">
+        <div class="card h-100 text-center p-3 border-success">
+            <div class="card-body">
+                <div class="display-5 text-success mb-3"><i class="bi bi-receipt-cutoff"></i></div>
+                <h5 class="card-title">Historial</h5>
+                <a href="{% url 'sale_list' %}" class="btn btn-outline-success w-100 stretched-link">Ver Ventas</a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- DOCS API -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card bg-dark text-white shadow-lg border-0">
+            <div class="card-body p-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div>
+                    <h3 class="mb-1"><i class="bi bi-code-slash text-warning"></i> Developer Center</h3>
+                    <p class="mb-0 text-white-50">Documentación técnica de la API REST para integración.</p>
+                </div>
+                <a href="{% url 'api_docs' %}" class="btn btn-warning btn-lg fw-bold px-4 shadow">
+                    <i class="bi bi-journal-code me-2"></i> Ver Documentación API
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
